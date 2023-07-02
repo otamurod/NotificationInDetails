@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">NotificationInDetails</string>
+    <string name="app_name">Image Downloader</string>
     <string name="tap_to_view">Tap to view the image</string>
     <string name="download_image">Download Favourite Image</string>
     <string name="download_completed">Download Completed</string>
