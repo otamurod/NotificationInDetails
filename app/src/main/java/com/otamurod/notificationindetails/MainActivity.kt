@@ -6,8 +6,10 @@ import android.app.DownloadManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
@@ -40,13 +42,14 @@ class MainActivity : AppCompatActivity() {
         val imageUri = intent.data
         imageUri?.apply {
             binding.notifyBtn.visibility = View.GONE
-            binding.notificationImage.visibility = View.VISIBLE
+            binding.imageCard.visibility = View.VISIBLE
             binding.notificationImage.setImageURI(imageUri)
         }
 
         binding.apply {
             notifyBtn.setOnClickListener {
                 onDownload(url)
+                notifyBtn.isClickable = false
             }
         }
     }
@@ -97,8 +100,8 @@ class MainActivity : AppCompatActivity() {
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(false)
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
+            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val downloadID = downloadManager.enqueue(request)
 
             var totalBytes = 0L
@@ -137,9 +140,20 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     cursor.close()
-                    SystemClock.sleep(1000)
+                    SystemClock.sleep(100)
+                }
+                // Listen to the completion of the download using a BroadcastReceiver
+                val onComplete = object : BroadcastReceiver() {
+                    override fun onReceive(context: Context?, intent: Intent?) {
+                        val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                        if (id == downloadID) {
+                            // Dismiss the Download Manager's notification
+                            downloadManager.remove(id)
+                        }
+                    }
                 }
 
+                registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
                 updateNotification(fileName)
             }.start()
 
