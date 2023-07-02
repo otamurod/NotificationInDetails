@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.support.v4.app.NotificationCompat
 import android.support.v7.app.AppCompatActivity
 import android.view.View
@@ -43,25 +44,20 @@ class MainActivity : AppCompatActivity() {
 
             intent.data = imageUri
             val pendingIntent: PendingIntent = PendingIntent.getActivity(
-                this@MainActivity,
-                0,
-                intent,
-                PendingIntent.FLAG_IMMUTABLE
+                this@MainActivity, 0, intent, PendingIntent.FLAG_IMMUTABLE
             )
 
+            //Sets the maximum progress as 100
+            val progressMax = 100
+
             val notificationBuilder = NotificationCompat.Builder(this@MainActivity, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_fav_border)
-                .setContentTitle(imageTitle)
-                .setContentText(imageDescription)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setColor(resources.getColor(R.color.red))
+                .setSmallIcon(R.drawable.ic_fav_border).setContentTitle(imageTitle)
+                .setContentText(imageDescription).setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setColor(resources.getColor(R.color.red)).setOnlyAlertOnce(true)
+                .setProgress(progressMax, 0, true)
                 // Set the intent that will fire when the user taps the notification
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setStyle(
-                    NotificationCompat.BigPictureStyle()
-                        .bigPicture(picture)
-                        .bigLargeIcon(null)
+                .setContentIntent(pendingIntent).setAutoCancel(true).setStyle(
+                    NotificationCompat.BigPictureStyle().bigPicture(picture).bigLargeIcon(null)
                 )
 
             val notification = notificationBuilder.build()
@@ -70,7 +66,29 @@ class MainActivity : AppCompatActivity() {
             createNotificationChannel()
 
             notifyBtn.setOnClickListener {
+                //Initial Alert
                 notificationManager.notify(100, notification)
+
+                Thread {
+                    var progress = 0
+                    while (progress < progressMax) {
+                        SystemClock.sleep(
+                            500
+                        )
+                        progress += 5
+                        //Use this to make it a Fixed-duration progress indicator notification
+
+                        notificationBuilder.setContentText("$progress%")
+                            .setProgress(progressMax, progress, false)
+
+                        notificationManager.notify(100, notificationBuilder.build())
+                    }
+
+                    notificationBuilder.setContentText("Download complete")
+                        .setProgress(0, 10, false)
+                    notificationManager.notify(100, notificationBuilder.build())
+                }.start()
+
             }
         }
     }
